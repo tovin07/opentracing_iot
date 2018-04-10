@@ -1,4 +1,5 @@
 env
+Api_Platform
 *.pyc
 build
 dist

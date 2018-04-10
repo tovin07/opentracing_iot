@@ -22,9 +22,8 @@ def handle_connect(client, userdata, flags, rc):
         print("Connection failed")
 
 
-
 def handle_message(client, userdata, message):
-    if (message.topic == mqttConfig.clientName + '/TextCarrier'):
+    if (message.topic == mqttConfig.clientName + '/FilterTextCarrier'):
         print("message recieve text carrier ", (message.payload))
         try:
             global recevieTextCarrier
@@ -34,10 +33,10 @@ def handle_message(client, userdata, message):
         except TypeError:
             print("Type error")
 
-    if (message.topic == mqttConfig.clientName + '/Temperature'):
+    if (message.topic == mqttConfig.clientName + '/Filter'):
         global receiveData 
         receiveData = True
-        print("message recieve text carrier ", str(message.payload.decode("utf-8")))
+        # print("message recieve text carrier ", str(message.payload.decode("utf-8")))
         global json_data 
         json_data = message.payload
 
@@ -45,6 +44,8 @@ isConnectedBroker = False
 recevieTextCarrier =False
 receiveData = False
 text_carrier_recive = None
+json_data = None
+
 
 mqttConfig = MqttConfig()
 
@@ -67,20 +68,21 @@ if __name__ == '__main__':
 
     while True:
         client.loop_start()
-        client.subscribe(mqttConfig.clientName + '/TextCarrier')
+        client.subscribe(mqttConfig.clientName + '/FilterTextCarrier')
 
-        if(text_carrier_recive and recevieTextCarrier):
+        if (text_carrier_recive and recevieTextCarrier):    
             print('create span context')
             recevieTextCarrier = False
             span_context_recive = opentracing.tracer.extract(opentracing.Format.TEXT_MAP, text_carrier_recive)
-            with opentracing.tracer.start_span('fog level', child_of=span_context_recive) as fog_span:
-                text_carrier_send = {}
-                opentracing.tracer.inject(fog_span.context, opentracing.Format.TEXT_MAP, text_carrier_send)
-                with opentracing.start_child_span(fog_span, 'subscribe') as subscribe_span:
-                    client.subscribe(mqttConfig.clientName + '/Temperature')
-                with opentracing.start_child_span(fog_span, 'publish') as publish_span:
-                    if (receiveData):
-                        client.publish(mqttConfig.clientName + '/FilterTextCarrier', json.dumps(text_carrier_send))
-                        client.publish(mqttConfig.clientName + '/Filter', json_data)
-        time.sleep(0.5)
+
+            with opentracing.tracer.start_span('filter span', child_of=span_context_recive) as filter_span:
+                client.subscribe(mqttConfig.clientName + '/Filter')
+                # text_carrier_send = {}
+                # opentracing.tracer.inject(filter_span.context, opentracing.Format.TEXT_MAP, text_carrier_send)
+                # with opentracing.start_child_span(fog_span, 'pusblish') as pusblish_span:
+                #     client.pusblish(mqttConfig + '/filter', json_data)
+                if (receiveData):
+                    time.sleep(2)
+
+        time.sleep(1)
 
