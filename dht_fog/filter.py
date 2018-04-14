@@ -36,7 +36,7 @@ def handle_message(client, userdata, message):
     if (message.topic == mqttConfig.clientName + '/Filter'):
         global receiveData 
         receiveData = True
-        # print("message recieve text carrier ", str(message.payload.decode("utf-8")))
+        print("message recieve text carrier ", str(message.payload.decode("utf-8")))
         global json_data 
         json_data = message.payload
 
@@ -50,7 +50,7 @@ json_data = None
 mqttConfig = MqttConfig()
 
 client=mqtt.Client()
-client.username_pw_set(mqttConfig.user, mqttConfig.passworld)
+# client.username_pw_set(mqttConfig.user, mqttConfig.passworld)
 
 # handle connection and message
 client.on_connect = handle_connect
@@ -76,13 +76,14 @@ if __name__ == '__main__':
             span_context_recive = opentracing.tracer.extract(opentracing.Format.TEXT_MAP, text_carrier_recive)
 
             with opentracing.tracer.start_span('filter span', child_of=span_context_recive) as filter_span:
+                text_carrier_send = {}
+                opentracing.tracer.inject(filter_span.context, opentracing.Format.TEXT_MAP, text_carrier_send)
                 client.subscribe(mqttConfig.clientName + '/Filter')
-                # text_carrier_send = {}
-                # opentracing.tracer.inject(filter_span.context, opentracing.Format.TEXT_MAP, text_carrier_send)
-                # with opentracing.start_child_span(fog_span, 'pusblish') as pusblish_span:
-                #     client.pusblish(mqttConfig + '/filter', json_data)
+                
                 if (receiveData):
-                    time.sleep(2)
-
-        time.sleep(1)
+                    time.sleep(00000.1)
+                    client.publish(mqttConfig.clientName + '/DbWriterTextCarrier', json.dumps(text_carrier_send))
+                    client.publish(mqttConfig.clientName + '/DbWriter', json_data)
+                    filter_span.log_event('data filter after filter', payload=json_data)
+        time.sleep(0.1)
 

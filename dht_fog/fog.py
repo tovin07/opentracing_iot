@@ -49,7 +49,7 @@ text_carrier_recive = None
 mqttConfig = MqttConfig()
 
 client=mqtt.Client()
-client.username_pw_set(mqttConfig.user, mqttConfig.passworld)
+# client.username_pw_set(mqttConfig.user, mqttConfig.passworld)
 
 # handle connection and message
 client.on_connect = handle_connect
@@ -78,9 +78,12 @@ if __name__ == '__main__':
                 opentracing.tracer.inject(fog_span.context, opentracing.Format.TEXT_MAP, text_carrier_send)
                 with opentracing.start_child_span(fog_span, 'subscribe') as subscribe_span:
                     client.subscribe(mqttConfig.clientName + '/Temperature')
+                    if (receiveData):
+                        subscribe_span.log_event('data recive from thing level', payload=json_data)
                 with opentracing.start_child_span(fog_span, 'publish') as publish_span:
                     if (receiveData):
                         client.publish(mqttConfig.clientName + '/FilterTextCarrier', json.dumps(text_carrier_send))
                         client.publish(mqttConfig.clientName + '/Filter', json_data)
+                        publish_span.log_event('data send to filer', payload=json_data)
         time.sleep(0.5)
 

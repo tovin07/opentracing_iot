@@ -27,7 +27,7 @@ def handle_connect(client, userdata, flags, rc):
 mqttConfig = MqttConfig()
 client=mqtt.Client()
 
-client.username_pw_set(mqttConfig.user, mqttConfig.passworld)
+# client.username_pw_set(mqttConfig.user, mqttConfig.passworld)
 client.on_connect = handle_connect
 
 client.connect(mqttConfig.broker_address, mqttConfig.port)
@@ -74,6 +74,7 @@ if __name__ == '__main__':
                 client.loop_start()
                 client.publish(mqttConfig.clientName + '/TextCarrier', json.dumps(text_carrier))
                 client.publish(mqttConfig.clientName + '/Temperature', json_data)
+                send_to_fog_span.log_event('data send', payload=json_data)
                 #client.loop_stop()
             # root_span.finish();
 
